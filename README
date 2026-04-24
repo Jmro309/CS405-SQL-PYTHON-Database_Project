@@ -1,0 +1,10 @@
+#PROJECT
+    - Database Systems Final Project
+    - Files
+        - DB_Schema.sql : This the schema used in the database defined in SQL
+        - Interface.py : This is the Python script used to interface with the database
+
+
+#Authors
+    - Jacob Rowe
+
