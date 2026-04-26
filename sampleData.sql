@@ -100,22 +100,22 @@ insert into meeting (clubName, clubYear, meetingDate, startTime, classroom, desc
 insert into transactions (clubName, clubYear, transactionID, transactionDate, description, amount, transactiontype) values
 
 ('Chemistry Club', 2026, 'T10000001', '2026-02-05', 'Lab supplies purchase', 18.75, 'expense'),
-('Chemistry Club', 2026, 'T10000002', '2026-02-19', 'Donation from alumni', 25.00, 'income'),
+('Chemistry Club', 2026, 'T10000002', '2026-02-19', 'Donation from alumni', 25.00, 'deposit'),
 
 ('Cipher Design Enthusiasts', 2026, 'T10000003', '2026-02-06', 'Encryption software license', 12.50, 'expense'),
-('Cipher Design Enthusiasts', 2026, 'T10000004', '2026-02-20', 'Club fundraiser', 30.00, 'income'),
+('Cipher Design Enthusiasts', 2026, 'T10000004', '2026-02-20', 'Club fundraiser', 30.00, 'deposit'),
 
 ('National Honor Society', 2026, 'T10000005', '2026-10-10', 'Volunteer supplies', 22.00, 'expense'),
-('National Honor Society', 2026, 'T10000006', '2026-11-14', 'Community donation', 40.00, 'income'),
+('National Honor Society', 2026, 'T10000006', '2026-11-14', 'Community donation', 40.00, 'deposit'),
 
 ('Alpha Club', 2026, 'T10000007', '2026-03-01', 'Team materials', 15.25, 'expense'),
-('Alpha Club', 2026, 'T10000008', '2026-03-15', 'Membership dues', 35.00, 'income'),
+('Alpha Club', 2026, 'T10000008', '2026-03-15', 'Membership dues', 35.00, 'deposit'),
 
 ('Chess Club', 2026, 'T10000009', '2026-02-08', 'Chess sets replacement pieces', 10.00, 'expense'),
-('Chess Club', 2026, 'T10000010', '2026-02-22', 'Tournament entry fees covered', 20.00, 'income'),
+('Chess Club', 2026, 'T10000010', '2026-02-22', 'Tournament entry fees covered', 20.00, 'deposit'),
 
 ('Art Club', 2025, 'T10000011', '2025-09-12', 'Paint and brushes', 19.99, 'expense'),
-('Art Club', 2025, 'T10000012', '2025-10-03', 'Art show ticket sales', 50.00, 'income'),
+('Art Club', 2025, 'T10000012', '2025-10-03', 'Art show ticket sales', 50.00, 'deposit'),
 
 ('Alpha Club', 2025, 'T10000013', '2025-09-20', 'Leadership workshop materials', 14.50, 'expense'),
 
