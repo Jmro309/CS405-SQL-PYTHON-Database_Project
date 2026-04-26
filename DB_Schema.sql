@@ -57,7 +57,6 @@ create table fieldtrip (
         on delete cascade
 );
 
--- transactions
 create table transactions (
     clubName varchar(100),
     clubYear int,
@@ -65,11 +64,13 @@ create table transactions (
     transactionDate date,
     description varchar(250),
     amount decimal(10,2),
-    transactiontype varchar(50),
+    transactionType varchar(50),
     primary key (clubName, clubYear, transactionID),
     foreign key (clubName, clubYear)
         references club(name, year)
-        on delete cascade
+        on delete cascade,
+    constraint checkTransactionType
+        check (transactionType in ('deposit', 'expense'))
 );
 
 -- membership (join relationship)
@@ -99,3 +100,26 @@ create table advisor (
         references club(name, year)
         on delete cascade
 );
+
+
+delimiter //
+
+create trigger updateBudgetAfterTransaction
+after insert on transactions
+for each row
+begin
+    if new.transactionType = 'deposit' then
+        update budget
+        set balance = balance + new.amount
+        where clubName = new.clubName
+          and clubYear = new.clubYear;
+
+    elseif new.transactionType = 'expense' then
+        update budget
+        set balance = balance - new.amount
+        where clubName = new.clubName
+          and clubYear = new.clubYear;
+    end if;
+end//
+
+delimiter ;
