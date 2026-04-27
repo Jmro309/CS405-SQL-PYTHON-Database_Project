@@ -1,3 +1,4 @@
+from datetime import date
 import mysql.connector
 from mysql.connector import Error
 
@@ -69,11 +70,12 @@ def manage_single_club(connection, club_name, club_year):           # Manages th
         print("3. View faculty advisor")
         print("4. View all meetings and events")
         print("5. Record annual budget")
-        print("6. Record an expense")
-        print("7. Report total expenses and remaining budget")
-        print("8. Return\n")
+        print("6. Record a deposit")
+        print("7. Record an expense")
+        print("8. Report total expenses and remaining budget")
+        print("9. Return\n")
 
-        choice = get_menu_choice(1, 8)
+        choice = get_menu_choice(1, 9)
 
         if choice == 1:
             manage_meetings(connection, club_name, club_year)
@@ -86,17 +88,128 @@ def manage_single_club(connection, club_name, club_year):           # Manages th
         elif choice == 5:
             record_budget(connection, club_name, club_year)
         elif choice == 6:
-            record_expense(connection, club_name, club_year)
+            record_deposit(connection, club_name, club_year)
         elif choice == 7:
-            report_budget(connection, club_name, club_year)
+            record_expense(connection, club_name, club_year)
         elif choice == 8:
+            report_budget(connection, club_name, club_year)
+        elif choice == 9:
             break
 
 def manage_meetings(connection, club_name, club_year):
-    return 0
+    while True:
+        print(f"\n=== Manage Meetings for {club_name} ({club_year}) ===")
+        print("1. Add a meeting")
+        print("2. Delete a meeting")
+        print("3. Return\n")
+
+        choice = get_menu_choice(1, 3)
+
+        # -------------------------
+        # ADD MEETING
+        # -------------------------
+        if choice == 1:
+            cursor = connection.cursor()
+
+            meeting_date = input("Enter meeting date (YYYY-MM-DD): ")
+            start_time = input("Enter start time (HH:MM:SS): ")
+            classroom = input("Enter classroom: ")
+            description = input("Enter description: ")
+            duration = int(input("Enter duration (minutes): "))
+
+            try:
+                cursor.execute("""
+                    INSERT INTO meeting
+                    (clubName, clubYear, meetingDate, startTime, classroom, description, duration)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    club_name,
+                    club_year,
+                    meeting_date,
+                    start_time,
+                    classroom,
+                    description,
+                    duration
+                ))
+
+                connection.commit()
+                print("Meeting added successfully!")
+
+            except Exception as e:
+                print(f"Error adding meeting: {e}")
+
+            cursor.close()
+            input("\nPress Enter to continue...")
+
+        # -------------------------
+        # DELETE MEETING
+        # -------------------------
+        elif choice == 2:
+            cursor = connection.cursor()
+
+            meeting_date = input("Enter meeting date (YYYY-MM-DD): ")
+            start_time = input("Enter start time (HH:MM:SS): ")
+
+            try:
+                cursor.execute("""
+                    DELETE FROM meeting
+                    WHERE clubName = %s
+                    AND clubYear = %s
+                    AND meetingDate = %s
+                    AND startTime = %s
+                """, (
+                    club_name,
+                    club_year,
+                    meeting_date,
+                    start_time
+                ))
+
+                connection.commit()
+
+                if cursor.rowcount > 0:
+                    print("Meeting deleted successfully!")
+                else:
+                    print("No matching meeting found.")
+
+            except Exception as e:
+                print(f"Error deleting meeting: {e}")
+
+            cursor.close()
+            input("\nPress Enter to continue...")
+
+        # -------------------------
+        # RETURN
+        # -------------------------
+        elif choice == 3:
+            break
 
 def view_students(connection, club_name, club_year):
-    return 0
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT s.studentID, s.name
+            FROM membership m
+            JOIN student s ON m.studentID = s.studentID
+            WHERE m.clubName = %s AND m.clubYear = %s
+            ORDER BY s.name
+        """, (club_name, club_year))
+
+        results = cursor.fetchall()
+
+        print(f"\n=== Students in {club_name} ({club_year}) ===")
+
+        if not results:
+            print("No students are currently enrolled in this club.")
+        else:
+            for student_id, name in results:
+                print(f"{student_id} - {name}")
+
+    except Exception as e:
+        print(f"Error retrieving students: {e}")
+
+    cursor.close()
+    input("\nPress Enter to continue...")
 
 def view_advisor(connection, club_name, club_year):
     cursor = connection.cursor()
@@ -120,19 +233,235 @@ def view_advisor(connection, club_name, club_year):
     input("\nPress Enter to continue...")  # pause so user can read it before menu reappears
 
 def view_meetings(connection, club_name, club_year):
-    return 0
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT meetingDate, startTime, classroom, description, duration
+            FROM meeting
+            WHERE clubName = %s AND clubYear = %s
+            ORDER BY meetingDate, startTime
+        """, (club_name, club_year))
+
+        results = cursor.fetchall()
+
+        print(f"\n=== Meetings for {club_name} ({club_year}) ===")
+
+        if not results:
+            print("No meetings scheduled for this club.")
+        else:
+            for meeting_date, start_time, classroom, description, duration in results:
+                print(f"\nDate: {meeting_date}")
+                print(f"Time: {start_time}")
+                print(f"Room: {classroom}")
+                print(f"Duration: {duration} minutes")
+                print(f"Description: {description}")
+
+    except Exception as e:
+        print(f"Error retrieving meetings: {e}")
+
+    cursor.close()
+    input("\nPress Enter to continue...")
 
 def record_budget(connection, club_name, club_year):
-    return 0
+    cursor = connection.cursor()
 
+    try:
+        balance = float(input("Enter budget balance: "))
+
+        cursor.execute("""
+            INSERT INTO budget (clubName, clubYear, balance)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE balance = VALUES(balance)
+        """, (club_name, club_year, balance))
+
+        connection.commit()
+        print(f"Budget set to ${balance:,.2f} for {club_name} ({club_year})")
+
+    except Exception as e:
+        print(f"Error recording budget: {e}")
+
+    cursor.close()
+    input("\nPress Enter to continue...")
+
+def record_deposit(connection, club_name, club_year):
+    cursor = connection.cursor()
+
+    try:
+        # -------------------------
+        # USER INPUT
+        # -------------------------
+        transaction_id = input("Enter 9-digit Transaction ID: ")
+
+        # validate format
+        if not (transaction_id.isdigit() and len(transaction_id) == 9):
+            print("Transaction ID must be exactly 9 digits.")
+            cursor.close()
+            return
+
+        transaction_date = input("Enter transaction date (YYYY-MM-DD): ")
+        description = input("Enter description: ")
+        amount = float(input("Enter deposit amount: "))
+
+        # -------------------------
+        # CHECK DUPLICATE ID
+        # -------------------------
+        cursor.execute("""
+            SELECT 1 FROM transactions
+            WHERE transactionID = %s
+            AND clubName = %s
+            AND clubYear = %s
+        """, (transaction_id, club_name, club_year))
+
+        if cursor.fetchone():
+            print("Error: Transaction ID already exists for this club.")
+            cursor.close()
+            return
+
+        # -------------------------
+        # INSERT
+        # -------------------------
+        cursor.execute("""
+            INSERT INTO transactions
+            (clubName, clubYear, transactionID, transactionDate, description, amount, transactionType)
+            VALUES (%s, %s, %s, %s, %s, %s, 'deposit')
+        """, (
+            club_name,
+            club_year,
+            transaction_id,
+            transaction_date,
+            description,
+            amount
+        ))
+
+        connection.commit()
+        print("Deposit recorded successfully!")
+
+    except Exception as e:
+        print(f"Error recording deposit: {e}")
+
+    cursor.close()
+    input("\nPress Enter to continue...")
 def record_expense(connection, club_name, club_year):
-    return 0
+    cursor = connection.cursor()
+
+    try:
+        # -------------------------
+        # USER INPUT
+        # -------------------------
+        transaction_id = input("Enter 9-digit Transaction ID: ")
+
+        # validate ID format
+        if not (transaction_id.isdigit() and len(transaction_id) == 9):
+            print("Transaction ID must be exactly 9 digits.")
+            cursor.close()
+            return
+
+        transaction_date = input("Enter transaction date (YYYY-MM-DD): ")
+        description = input("Enter description: ")
+        amount = float(input("Enter expense amount: "))
+
+        if amount <= 0:
+            print("Expense amount must be greater than 0.")
+            cursor.close()
+            return
+
+        # -------------------------
+        # CHECK DUPLICATE ID
+        # -------------------------
+        cursor.execute("""
+            SELECT 1 FROM transactions
+            WHERE transactionID = %s
+            AND clubName = %s
+            AND clubYear = %s
+        """, (transaction_id, club_name, club_year))
+
+        if cursor.fetchone():
+            print("Error: Transaction ID already exists for this club.")
+            cursor.close()
+            return
+
+        # -------------------------
+        # INSERT EXPENSE
+        # -------------------------
+        cursor.execute("""
+            INSERT INTO transactions
+            (clubName, clubYear, transactionID, transactionDate, description, amount, transactionType)
+            VALUES (%s, %s, %s, %s, %s, %s, 'expense')
+        """, (
+            club_name,
+            club_year,
+            transaction_id,
+            transaction_date,
+            description,
+            amount
+        ))
+
+        connection.commit()
+        print("Expense recorded successfully!")
+
+    except Exception as e:
+        print(f"Error recording expense: {e}")
+
+    cursor.close()
+    input("\nPress Enter to continue...")
 
 def report_budget(connection, club_name, club_year):
-    return 0
+    cursor = connection.cursor()
 
-def report_budget_all(connection, club_name, club_year):
-    return 0
+    try:
+        # -------------------------
+        # GET BUDGET
+        # -------------------------
+        cursor.execute("""
+            SELECT balance
+            FROM budget
+            WHERE clubName = %s AND clubYear = %s
+        """, (club_name, club_year))
+
+        budget_row = cursor.fetchone()
+        budget = budget_row[0] if budget_row else 0
+
+        # -------------------------
+        # TOTAL DEPOSITS
+        # -------------------------
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0)
+            FROM transactions
+            WHERE clubName = %s
+            AND clubYear = %s
+            AND transactionType = 'deposit'
+        """, (club_name, club_year))
+
+        deposits = cursor.fetchone()[0]
+
+        # -------------------------
+        # TOTAL EXPENSES
+        # -------------------------
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0)
+            FROM transactions
+            WHERE clubName = %s
+            AND clubYear = %s
+            AND transactionType = 'expense'
+        """, (club_name, club_year))
+
+        expenses = cursor.fetchone()[0]
+
+        # -------------------------
+        # OUTPUT
+        # -------------------------
+        print(f"\n=== Budget Report for {club_name} ({club_year}) ===")
+        print(f"Total Deposits  : ${deposits:,.2f}")
+        print(f"Total Expenses  : ${expenses:,.2f}")
+        print(f"-----------------------------")
+        print(f"Remaining Budget : ${budget:,.2f}")
+
+    except Exception as e:
+        print(f"Error generating budget report: {e}")
+
+    cursor.close()
+    input("\nPress Enter to continue...")
 
 def manage_faculty(connection):             # 2. Manage faculty members who advise clubs
     while True:
