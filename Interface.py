@@ -48,11 +48,10 @@ def manage_clubs(connection):               # 1. Manage clubs and their associat
 
         clubs = list_clubs(connection)
 
-        print(f"{len(clubs) + 1}. Report the total budget of all clubs in a given year")
-        print(f"{len(clubs) + 2}. Return\n")
+        print(f"{len(clubs) + 1}. Return\n")
 
-        choice = get_menu_choice(1, len(clubs) + 2)
-        if choice == len(clubs) + 2:
+        choice = get_menu_choice(1, len(clubs) + 1)
+        if choice == len(clubs) + 1:
             break
 
         # look up which club they picked (subtract 1 because lists start at 0)
@@ -225,7 +224,7 @@ def view_advisor(connection, club_name, club_year):
     print(f"\n=== Advisor for {club_name} ({club_year}) ===")
     if result:
         for row in result:
-            print(f"ID: {row[0]}, Name: {row[1]}")
+            print(f"{row[0]} - {row[1]}")
     else:
         print("No advisor assigned.")
     
