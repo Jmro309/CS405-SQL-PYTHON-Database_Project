@@ -45,7 +45,7 @@ def list_faculty(connection):       # Make a list of the names and ID's if all f
     faculty_list = cursor.fetchall()
 
     if not faculty_list:
-        print("No Faculty members found.")
+        print("\nNo faculty members found.")
         cursor.close()
         return[]
     
@@ -55,6 +55,21 @@ def list_faculty(connection):       # Make a list of the names and ID's if all f
     
     cursor.close()
     return faculty_list
+
+def list_students(connection):
+    cursor = connection.cursor()
+    cursor.execute("SELECT name , studentID FROM student ORDER BY name ASC")
+    student_list = cursor.fetchall()
+
+    if not student_list:
+        print("\nNo students found.")
+        cursor.close()
+        return[]
+    
+    for i, row in enumerate(student_list, start = 1):
+        print(f"{i}. {row[0]} (ID: {row[1]})")
+    cursor.close()
+    return student_list
 
 # ====================================== Make functions for each of the 3 main objectives of the project ====================================== #
 
@@ -514,15 +529,106 @@ def view_advised_clubs(connection, faculty_ID, faculty_name): #Display all of th
         print(f"\n=== Clubs Advised by {faculty_name} ===")
         if result:
             for row in result:
-                print("Club Name: ,{row[0]} ({row[1]})")
+                print(f"Club Name: {row[0]} ({row[1]})")
         else:
             print("Advises no clubs.")
 
         cursor.close()
         input("\n Press Enter to continue...")
+
 def manage_students(connection):            # 3. Manage students and their club memberships
     while True:
-        break
+        print(f"\n=== Manage Student ===")
+        print("Select a Student to View")
+
+        students = list_students(connection)
+
+        print(f"{len(students) + 1}. Return\n")
+
+        choice = get_menu_choice(1,len(students)+ 1)
+        if choice == len(students) + 1:
+            break
+
+        selected_student = students[choice - 1]
+        student_name = selected_student[0]
+        student_ID = selected_student[1]
+
+        manage_single_student(connection, student_name, student_ID)
+
+def manage_single_student(connection, student_name, student_ID):
+    while True:
+        print(f"\n=== {student_name}  (ID: {student_ID})===")
+        print("1. View all affiliated clubs.")
+        print("2. View all meetings and events student is scheduled for.")
+        print("3. Return\n")
+        
+        choice = get_menu_choice(1,3)
+
+        if choice == 1:
+            view_affiliated_clubs(connection,student_name,student_ID)
+        elif choice == 2:
+            view_scheduled_meetings_events(connection, student_name, student_ID)
+        elif choice == 3:
+            break
+
+def view_affiliated_clubs(connection, student_name, student_ID):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT clubName, clubYear 
+        FROM membership
+        WHERE studentID = %s
+                   """,(student_ID,))
+    
+    result = cursor.fetchall()
+
+    print(f"\n=== Clubs affialated with {student_name} ===")
+    if result:
+        for row in result:
+            print(f"Club Name: {row[0]} ({row[1]})")
+    else:
+        print("Affiliated with no clubs.")
+    
+    cursor.close()
+    input("\n Press Enter to continue...")
+
+
+def view_scheduled_meetings_events(connection,student_name,student_ID):
+    meeting_date = input("\n Please enter the query date (YYYY-MM-DD): ")
+
+    cursor = connection.cursor()
+    cursor.execute("""
+            SELECT startTime as Time, classroom as Location, clubName, 'Meeting' as Type
+            FROM meeting
+            JOIN membership ON meeting.clubName = membership.clubName
+                   AND meeting.clubYear = membership.clubYear
+            WHERE membership.studentID = %s AND meeting.meetingDate = %s
+            UNION
+            SELECT tripTime as Time, destination as Location, clubName, 'Field Trip' as Type
+            FROM fieldtrip
+            JOIN membership ON fieldtrip.clubName = membership.clubName
+                            AND fieldtrip.clubYear = membership.clubYear
+            WHERE membership.studentID = %s AND fieldtrip.tripDate = %s
+            ORDER BY Time ASC
+                   """, (student_ID , meeting_date, student_ID, meeting_date))
+    result = cursor.fetchall()
+
+    print(f"\n=== Scheduled meetings and events for {student_name} on {meeting_date} ===")
+    if result:
+        for row in result:
+            print(f"[{row[0]}] {row[3]}: {row[2]} at {row[1]}")
+    else:
+        print("No meetings or events scheduled for this date.")
+
+    cursor.close()
+
+    input("\n Press Enter to continue...")
+
+
+
+    
+
+
+
 
 # ======================================================================================================================================================================== #
 
