@@ -597,13 +597,13 @@ def view_scheduled_meetings_events(connection,student_name,student_ID):
 
     cursor = connection.cursor()
     cursor.execute("""
-            SELECT startTime as Time, classroom as Location, clubName, 'Meeting' as Type
+            SELECT meeting.startTime as Time, meeting.classroom as Location, meeting.clubName, 'Meeting' as Type
             FROM meeting
             JOIN membership ON meeting.clubName = membership.clubName
                    AND meeting.clubYear = membership.clubYear
             WHERE membership.studentID = %s AND meeting.meetingDate = %s
             UNION
-            SELECT tripTime as Time, destination as Location, clubName, 'Field Trip' as Type
+            SELECT fieldtrip.tripTime as Time, fieldtrip.destination as Location, fieldtrip.clubName, 'Field Trip' as Type
             FROM fieldtrip
             JOIN membership ON fieldtrip.clubName = membership.clubName
                             AND fieldtrip.clubYear = membership.clubYear
