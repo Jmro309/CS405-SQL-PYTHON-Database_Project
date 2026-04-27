@@ -497,7 +497,7 @@ def report_budget(connection, club_name, club_year):
 def manage_faculty(connection):             # 2. Manage faculty members who advise clubs
     while True:
         print(f"\n=== Manage Faculty ===")
-        print("Select a Faculty Member to View Advised Clubs")
+        print("Select a Faculty Member to Manage Clubs")
 
         faculty = list_faculty(connection)
 
@@ -511,10 +511,68 @@ def manage_faculty(connection):             # 2. Manage faculty members who advi
         faculty_name = selected_faculty[0]
         faculty_ID = selected_faculty[1]
 
-        view_advised_clubs(connection,faculty_ID,faculty_name)
+        manage_single_advisor(connection,faculty_ID,faculty_name)
 
 
+
+def manage_single_advisor(connection, faculty_ID, faculty_name):
+    while True:
+        print(f"\n=== Managing {faculty_name} (ID: {faculty_ID})===")
+        print("Select an operation:")
+
+        print("1. Assign to advise a club")
+        print("2. List all advised clubs")
+        print("3. Return\n")
+
+        choice = get_menu_choice(1,3)
+
+        if choice == 1:
+            assign_advisor_to_club(connection, faculty_ID, faculty_name)
+        elif choice == 2:
+            view_advised_clubs(connection, faculty_ID, faculty_name)
+        elif choice == 3:
+            break;
+
+
+def assign_advisor_to_club(connection, faculty_ID, faculty_name):
+    print("\nList of all clubs:")
+    clubs = list_clubs(connection) 
+    
+    club_Name = input("Please enter the club name from listed clubs: ")
+    club_year_input = input("Please enter the year the advisor will advise this club: ")
+    
+   
+    try:
+        club_year = int(club_year_input)
+    except ValueError:
+        print("Error: The club year must be a valid number.")
+        return
+
+    cursor = None
+    try:
+        cursor = connection.cursor()
         
+        
+        cursor.execute("""
+            INSERT INTO advisor (facultyID, clubName, clubYear)
+            VALUES (%s, %s, %s)
+        """, (faculty_ID, club_Name, club_year))
+        
+       
+        connection.commit()
+        
+        print(f"==={faculty_name} (ID: {faculty_ID}) now advises {club_Name} ({club_year})")
+
+    except Exception as e:
+        print(f"\nFailed to assign advisor. Database Error: {e}")
+        print(" Ensure the faculty ID exists, and that the Club Name + Club Year combination exists in the 'club' table.")
+        print(" Also Ensure that this faculty is not already advising this club")
+        connection.rollback()
+        
+    finally:
+        if cursor:
+            cursor.close()
+
 
 def view_advised_clubs(connection, faculty_ID, faculty_name): #Display all of the clubs that a facutly member advises
         cursor = connection.cursor()
@@ -557,17 +615,24 @@ def manage_students(connection):            # 3. Manage students and their club 
 def manage_single_student(connection, student_name, student_ID):
     while True:
         print(f"\n=== {student_name}  (ID: {student_ID})===")
-        print("1. View all affiliated clubs.")
-        print("2. View all meetings and events student is scheduled for.")
-        print("3. Return\n")
+        print("1. Join or Leave a club")
+        print("2. List all members of a club")
+        print("3. View all affiliated clubs.")
+        print("4. View all meetings and events student is scheduled for.")
+        print("5. Return\n")
         
-        choice = get_menu_choice(1,3)
-
+        choice = get_menu_choice(1,5)
         if choice == 1:
-            view_affiliated_clubs(connection,student_name,student_ID)
+            student_join_leave(connection,student_name,student_ID)
         elif choice == 2:
-            view_scheduled_meetings_events(connection, student_name, student_ID)
+            club_name = input("\n Please enter the club name : ")
+            club_year = input("Please enter the club year : ")
+            view_students(connection,club_name,club_year)
         elif choice == 3:
+            view_affiliated_clubs(connection,student_name,student_ID)
+        elif choice == 4:
+            view_scheduled_meetings_events(connection, student_name, student_ID)
+        elif choice == 5:
             break
 
 def view_affiliated_clubs(connection, student_name, student_ID):
@@ -623,8 +688,60 @@ def view_scheduled_meetings_events(connection,student_name,student_ID):
     input("\n Press Enter to continue...")
 
 
-
+def student_join_leave(connection, student_name, student_ID):
+    cursor = connection.cursor()
     
+    club_name = input("\n please enter the club name to leave/join : ")
+    
+    try:
+        club_year = int(input("Please enter the club year : "))
+    except ValueError:
+        print("Invalid year format.")
+        cursor.close()
+        return
+
+    cursor.execute("SELECT name, year FROM club WHERE name = %s AND year = %s", (club_name, club_year))
+    club = cursor.fetchall()
+
+    if club:
+        print("1. Join the club")
+        print("2. Leave the club")
+        print("3. Return")
+
+        choice = get_menu_choice(1, 3)
+
+        if choice == 1:
+            try:
+                cursor.execute("""
+                               INSERT INTO membership
+                               (studentID , clubName , clubYear) 
+                               VALUES (%s , %s , %s)""",(student_ID , club_name , club_year))
+                connection.commit()
+                print("\n Student added to club")
+            except Exception as e:
+                print(f"\n Failed to join club. Database Error: {e}")
+                connection.rollback()
+                
+        elif choice == 2:
+            cursor.execute("SELECT studentID FROM membership WHERE studentID = %s AND clubName = %s AND clubYear = %s",(student_ID, club_name, club_year))
+            member = cursor.fetchall()
+            
+            if member:
+                cursor.execute("DELETE FROM membership WHERE studentID = %s AND clubName = %s AND clubYear = %s",(student_ID, club_name, club_year))
+                connection.commit()
+                print("\n Student successfully removed from club")
+            else:
+                print("\n Student is not part of that club")
+                
+        elif choice == 3:
+            cursor.close()
+            return
+    else:
+        print("Entered club does not exist")
+
+    cursor.close()
+    return
+
 
 
 
