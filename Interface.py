@@ -39,6 +39,38 @@ def list_clubs(connection):         # Make a list of the names and years of all 
     cursor.close()
     return clubs  # return the full list of clubs
 
+def list_faculty(connection):       # Make a list of the names and ID's if all faculty
+    cursor = connection.cursor()
+    cursor.execute("SELECT name,facultyID FROM faculty ORDER BY name ASC")
+    faculty_list = cursor.fetchall()
+
+    if not faculty_list:
+        print("\nNo faculty members found.")
+        cursor.close()
+        return[]
+    
+
+    for i, row in enumerate(faculty_list, start = 1):
+        print(f"{i}. {row[0]} (ID: {row[1]})")
+    
+    cursor.close()
+    return faculty_list
+
+def list_students(connection):
+    cursor = connection.cursor()
+    cursor.execute("SELECT name , studentID FROM student ORDER BY name ASC")
+    student_list = cursor.fetchall()
+
+    if not student_list:
+        print("\nNo students found.")
+        cursor.close()
+        return[]
+    
+    for i, row in enumerate(student_list, start = 1):
+        print(f"{i}. {row[0]} (ID: {row[1]})")
+    cursor.close()
+    return student_list
+
 # ====================================== Make functions for each of the 3 main objectives of the project ====================================== #
 
 def manage_clubs(connection):               # 1. Manage clubs and their associated information
@@ -464,11 +496,138 @@ def report_budget(connection, club_name, club_year):
 
 def manage_faculty(connection):             # 2. Manage faculty members who advise clubs
     while True:
-        break
+        print(f"\n=== Manage Faculty ===")
+        print("Select a Faculty Member to View Advised Clubs")
+
+        faculty = list_faculty(connection)
+
+        print(f"{len(faculty) + 1}. Return\n ")
+
+        choice = get_menu_choice(1, len(faculty) +1 )
+        if choice == len(faculty) + 1:
+            break;
+        
+        selected_faculty = faculty[choice - 1]
+        faculty_name = selected_faculty[0]
+        faculty_ID = selected_faculty[1]
+
+        view_advised_clubs(connection,faculty_ID,faculty_name)
+
+
+        
+
+def view_advised_clubs(connection, faculty_ID, faculty_name): #Display all of the clubs that a facutly member advises
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT clubName,clubYear 
+            FROM advisor
+            WHERE advisor.facultyID = %s """, (faculty_ID,) )
+        
+        result = cursor.fetchall()
+        
+        print(f"\n=== Clubs Advised by {faculty_name} ===")
+        if result:
+            for row in result:
+                print(f"Club Name: {row[0]} ({row[1]})")
+        else:
+            print("Advises no clubs.")
+
+        cursor.close()
+        input("\n Press Enter to continue...")
 
 def manage_students(connection):            # 3. Manage students and their club memberships
     while True:
-        break
+        print(f"\n=== Manage Student ===")
+        print("Select a Student to View")
+
+        students = list_students(connection)
+
+        print(f"{len(students) + 1}. Return\n")
+
+        choice = get_menu_choice(1,len(students)+ 1)
+        if choice == len(students) + 1:
+            break
+
+        selected_student = students[choice - 1]
+        student_name = selected_student[0]
+        student_ID = selected_student[1]
+
+        manage_single_student(connection, student_name, student_ID)
+
+def manage_single_student(connection, student_name, student_ID):
+    while True:
+        print(f"\n=== {student_name}  (ID: {student_ID})===")
+        print("1. View all affiliated clubs.")
+        print("2. View all meetings and events student is scheduled for.")
+        print("3. Return\n")
+        
+        choice = get_menu_choice(1,3)
+
+        if choice == 1:
+            view_affiliated_clubs(connection,student_name,student_ID)
+        elif choice == 2:
+            view_scheduled_meetings_events(connection, student_name, student_ID)
+        elif choice == 3:
+            break
+
+def view_affiliated_clubs(connection, student_name, student_ID):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT clubName, clubYear 
+        FROM membership
+        WHERE studentID = %s
+                   """,(student_ID,))
+    
+    result = cursor.fetchall()
+
+    print(f"\n=== Clubs affialated with {student_name} ===")
+    if result:
+        for row in result:
+            print(f"Club Name: {row[0]} ({row[1]})")
+    else:
+        print("Affiliated with no clubs.")
+    
+    cursor.close()
+    input("\n Press Enter to continue...")
+
+
+def view_scheduled_meetings_events(connection,student_name,student_ID):
+    meeting_date = input("\n Please enter the query date (YYYY-MM-DD): ")
+
+    cursor = connection.cursor()
+    cursor.execute("""
+            SELECT meeting.startTime as Time, meeting.classroom as Location, meeting.clubName, 'Meeting' as Type
+            FROM meeting
+            JOIN membership ON meeting.clubName = membership.clubName
+                   AND meeting.clubYear = membership.clubYear
+            WHERE membership.studentID = %s AND meeting.meetingDate = %s
+            UNION
+            SELECT fieldtrip.tripTime as Time, fieldtrip.destination as Location, fieldtrip.clubName, 'Field Trip' as Type
+            FROM fieldtrip
+            JOIN membership ON fieldtrip.clubName = membership.clubName
+                            AND fieldtrip.clubYear = membership.clubYear
+            WHERE membership.studentID = %s AND fieldtrip.tripDate = %s
+            ORDER BY Time ASC
+                   """, (student_ID , meeting_date, student_ID, meeting_date))
+    result = cursor.fetchall()
+
+    print(f"\n=== Scheduled meetings and events for {student_name} on {meeting_date} ===")
+    if result:
+        for row in result:
+            print(f"[{row[0]}] {row[3]}: {row[2]} at {row[1]}")
+    else:
+        print("No meetings or events scheduled for this date.")
+
+    cursor.close()
+
+    input("\n Press Enter to continue...")
+
+
+
+    
+
+
+
 
 # ======================================================================================================================================================================== #
 
