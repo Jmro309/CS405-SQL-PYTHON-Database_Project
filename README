@@ -3,7 +3,27 @@
     - Files
         - DB_Schema.sql : This the schema used in the database defined in SQL
         - Interface.py : This is the Python script used to interface with the database
+        - sampleData.sql : This is a file that populates the database with sample data
 
+#To Set Up Database and Run Interface:
+    1. Login to VM database using:
+       # mysql -h mysql.cs.uky.edu -u username -p
+    where username is your username for the MySQL server
+    you will need to enter your password as well.
+
+    2. Connect to your own database using:
+        USE username
+    
+    3. Import the database schema by using:
+        source DB_Schema.sql
+
+    4. Import dataset by using:
+        source sampleData.sql
+
+    5. Exit back to VM terminal
+
+    6. Run Interface.py using:
+        python3 Interface.py
 
 #Authors
     - Jacob Rowe
